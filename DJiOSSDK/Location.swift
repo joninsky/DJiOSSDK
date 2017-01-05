@@ -20,5 +20,26 @@ public class Location: Object {
     dynamic public internal(set) var locationLongitude: Double = 0
     
     
+    public func getJSON() -> [String: Any] {
+        
+        return ["type": "Point", "coordinates": [self.locationLongitude, self.locationLatitude]]
+        
+    }
+    
+    public func addLocation( long: Double, lat: Double) throws {
+        if let r = self.realm {
+            do{
+                try r.write {
+                    self.locationLongitude = long
+                    self.locationLatitude = lat
+                }
+            }catch{
+                
+            }
+        }else{
+            self.locationLongitude = long
+            self.locationLatitude = lat
+        }
+    }
     
 }

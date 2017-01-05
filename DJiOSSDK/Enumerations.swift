@@ -16,7 +16,7 @@ public enum NetworkError: Error {
     case couldNotSetPOSTBody(e: Error?)
     case requestError(e: Error?)
     case badResponse(code: Int?)
-    case failedToParseJSON
+    case failedToParseJSON(_: Error?)
     case realmError(e: Error?)
 }
 
@@ -34,6 +34,7 @@ enum HTTPMethod: String {
 }
 
 enum UserJSON: String {
+    case id = "_id"
     case name = "name"
     case djName = "djName"
     case email = "email"
@@ -44,17 +45,19 @@ enum UserJSON: String {
     case djscore = "djscore"
     case pushToken = "pushToken"
     case pushSandbox = "pushSandbox"
-    case parties = "parties"
+    case myParty = "myParty"
+    case currentParty = "currentParty"
     case created_at = "created_at"
     case updated_at = "updated_at"
 }
 
 enum PartyJSON: String {
+    case id = "_id"
     case name = "partyName"
     case dj = "dj"
     case participants = "participants"
     case location = "location"
-    case active = "active"
+    case publicParty = "public"
     case created_at = "created_at"
     case updated_at = "updated_at"
 }

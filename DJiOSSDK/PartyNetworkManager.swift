@@ -6,29 +6,23 @@
 //  Copyright © 2016 Jon Vogel. All rights reserved.
 //
 
-class PartyNetworkManager {
-    
-    //MARK: Properties
-    
-    let session = URLSession.shared
-    let mainQueue = DispatchQueue.main
-    
-    let urlString = "http://192.168.1.58:3000/api"
-    //let urlString = "http://172.31.99.143:3000/api"
-    //let urlString = "http://localhost:3000/api"
-    
-    //MARK: Initalier
-    init?(){
-        
-        
-        
-    }
-    
+class PartyNetworkManager: Networker {
     
     
     func createParty(party p: Party, byUser u: User, completion: @escaping(_ error: NetworkError?) -> Void) {
         
+        let transaction = Transaction(withDate: Date())
+        
+//        guard Configuration.internetStatus != .notReachable else{
+//            transaction.addErrorDescription(theError: NetworkError.noInternet)
+//            TransactionController.shared.addNewTransaction(transaction: transaction)
+//            completion(NetworkError.noInternet)
+//            return
+//        }
+        
         guard let finalURL = URL(string: self.urlString)?.appendingPathComponent("party") else{
+            transaction.addErrorDescription(theError: NetworkError.badURL)
+            TransactionController.shared.addNewTransaction(transaction: transaction)
             completion(NetworkError.badURL)
             return
         }
@@ -36,20 +30,27 @@ class PartyNetworkManager {
         var request = URLRequest(url: finalURL)
         
         request.httpMethod = HTTPMethod.POST.rawValue
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(contentTypeValue, forHTTPHeaderField: contentTypeHeader)
         
         do{
             var JSON = p.getJSON()
             JSON[PartyJSON.dj.rawValue] = u.id
             request.httpBody = try JSONSerialization.data(withJSONObject: JSON, options: .prettyPrinted)
         }catch{
+            transaction.addErrorDescription(theError: NetworkError.couldNotSetPOSTBody(e: error))
+            TransactionController.shared.addNewTransaction(transaction: transaction)
             completion(NetworkError.couldNotSetPOSTBody(e: error))
             return
         }
         
         let task = self.session.dataTask(with: request) { (data, response, error) in
+            
+            transaction.addSessionResponse(date: data, response: response, error: error)
+            
             if let e = error{
                 self.mainQueue.async {
+                    transaction.addErrorDescription(theError: NetworkError.requestError(e: e))
+                    TransactionController.shared.addNewTransaction(transaction: transaction)
                     completion(NetworkError.requestError(e: e))
                 }
             }else if let httpResponse = response as? HTTPURLResponse, let d = data {
@@ -62,44 +63,54 @@ class PartyNetworkManager {
                         JSON = try JSONSerialization.jsonObject(with: d, options: JSONSerialization.ReadingOptions.mutableContainers) as? [String: Any]
                     }catch{
                         self.mainQueue.async {
-                            completion(NetworkError.failedToParseJSON)
+                            transaction.addErrorDescription(theError: NetworkError.failedToParseJSON(error))
+                            TransactionController.shared.addNewTransaction(transaction: transaction)
+                            completion(NetworkError.failedToParseJSON(error))
                         }
                     }
-                    
-                    print(JSON)
                     
                     if let message = JSON["message"] as? String {
                         print(message)
                     }
                     
+                    
+                    print(JSON)
+                    
                     guard let id = JSON["id"] as? String else {
                         self.mainQueue.async {
-                            completion(NetworkError.failedToParseJSON)
+                            transaction.addErrorDescription(theError: NetworkError.failedToParseJSON(nil))
+                            TransactionController.shared.addNewTransaction(transaction: transaction)
+                            completion(NetworkError.failedToParseJSON(nil))
                         }
                         return
                     }
                     
+                    print(id)
+                    
                     self.mainQueue.async {
                         do{
                             try p.bindID(id)
-                            self.mainQueue.async {
-                                completion(nil)
-                            }
+                            TransactionController.shared.addNewTransaction(transaction: transaction)
+                            completion(nil)
                         }catch{
-                            self.mainQueue.async {
-                                completion(NetworkError.realmError(e: error))
-                            }
+                            transaction.addErrorDescription(theError: NetworkError.realmError(e: error))
+                            TransactionController.shared.addNewTransaction(transaction: transaction)
+                            completion(NetworkError.realmError(e: error))
                         }
                     }
                     
                 default:
                     self.mainQueue.async {
+                        transaction.addErrorDescription(theError: NetworkError.badResponse(code: httpResponse.statusCode))
+                        TransactionController.shared.addNewTransaction(transaction: transaction)
                         completion(NetworkError.badResponse(code: httpResponse.statusCode))
                     }
                 }
                 
             }else{
                 self.mainQueue.async {
+                    transaction.addErrorDescription(theError: NetworkError.badResponse(code: nil))
+                    TransactionController.shared.addNewTransaction(transaction: transaction)
                     completion(NetworkError.badResponse(code: nil))
                 }
             }
@@ -107,6 +118,89 @@ class PartyNetworkManager {
         
         task.resume()
         
+    }
+    
+    
+    public func deleteParty(thePartyID ID: String, completion: @escaping(_ error: NetworkError?) -> Void) {
+        
+        let transaction = Transaction(withDate: Date())
+        
+        //        guard Configuration.internetStatus != .notReachable else{
+        //            transaction.addErrorDescription(theError: NetworkError.noInternet)
+        //            TransactionController.shared.addNewTransaction(transaction: transaction)
+        //            completion(NetworkError.noInternet)
+        //            return
+        //        }
+        
+        guard let finalURL = URL(string: self.urlString)?.appendingPathComponent("party").appendingPathComponent(ID) else{
+            transaction.addErrorDescription(theError: NetworkError.badURL)
+            TransactionController.shared.addNewTransaction(transaction: transaction)
+            completion(NetworkError.badURL)
+            return
+        }
+        
+        print(finalURL)
+        
+        var request = URLRequest(url: finalURL)
+        
+        request.httpMethod = HTTPMethod.DELETE.rawValue
+        request.setValue(contentTypeValue, forHTTPHeaderField: contentTypeHeader)
+
+        
+        let task = self.session.dataTask(with: request) { (data, response, error) in
+            
+            transaction.addSessionResponse(date: data, response: response, error: error)
+            
+            if let e = error{
+                self.mainQueue.async {
+                    transaction.addErrorDescription(theError: NetworkError.requestError(e: e))
+                    TransactionController.shared.addNewTransaction(transaction: transaction)
+                    completion(NetworkError.requestError(e: e))
+                }
+            }else if let httpResponse = response as? HTTPURLResponse, let d = data {
+                switch httpResponse.statusCode {
+                case 200,201:
+                    
+                    var JSON: [String: Any]!
+                    
+                    do{
+                        JSON = try JSONSerialization.jsonObject(with: d, options: JSONSerialization.ReadingOptions.mutableContainers) as? [String: Any]
+                    }catch{
+                        self.mainQueue.async {
+                            transaction.addErrorDescription(theError: NetworkError.failedToParseJSON(error))
+                            TransactionController.shared.addNewTransaction(transaction: transaction)
+                            completion(NetworkError.failedToParseJSON(error))
+                        }
+                    }
+                    
+                    if let message = JSON["message"] as? String {
+                        print(message)
+                    }
+                    
+                    self.mainQueue.async {
+                        TransactionController.shared.addNewTransaction(transaction: transaction)
+                        completion(nil)
+                    }
+                    
+                default:
+                        self.mainQueue.async {
+                            transaction.addErrorDescription(theError: NetworkError.badResponse(code: httpResponse.statusCode))
+                            TransactionController.shared.addNewTransaction(transaction: transaction)
+                            completion(NetworkError.badResponse(code: httpResponse.statusCode))
+                        }
+                    }
+                    
+                }else{
+                    self.mainQueue.async {
+                        transaction.addErrorDescription(theError: NetworkError.badResponse(code: nil))
+                        TransactionController.shared.addNewTransaction(transaction: transaction)
+                        completion(NetworkError.badResponse(code: nil))
+                    }
+                }
+            }
+            
+            task.resume()
+
     }
     
     

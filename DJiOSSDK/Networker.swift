@@ -9,18 +9,25 @@
 import Foundation
 
 
-class Networker {
+public class Networker {
     //MARK: Properties
     
     let session = URLSession.shared
     let mainQueue = DispatchQueue.main
     
-    //let urlString = "http://192.168.1.58:3000/api"
-    //let urlString = "http://172.31.99.143:3000/api"
-    let urlString = "http://localhost:3000/api"
+    //Home Network
+    let urlString = "http://192.168.0.2:8080/api"
+    //Local Host
+    //let urlString = "http://localhost:8080/api"
+    //Live AWS
+    //let urlString = "http://ec2-35-165-240-107.us-west-2.compute.amazonaws.com:8080/api"
+    
+    //MARK: Header Stuff
+    let contentTypeValue = "application/json"
+    let contentTypeHeader = "Content-Type"
     
     //MARK: Initalier
-    init(){
+    public init(){
         
         
         

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C32CB2001E172B220060B657 /* SocketController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C32CB1FF1E172B220060B657 /* SocketController.swift */; };
 		C33208DA1E1488FD00CBCEC5 /* DJiOSSDK.h in Headers */ = {isa = PBXBuildFile; fileRef = C33208D81E1488FD00CBCEC5 /* DJiOSSDK.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		C3B7170E1E148DED00318A0E /* Configuration.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3B7170D1E148DED00318A0E /* Configuration.swift */; };
 		C3B717131E148E1500318A0E /* Enumerations.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3B717121E148E1500318A0E /* Enumerations.swift */; };
@@ -22,6 +23,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		C32CB1FF1E172B220060B657 /* SocketController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SocketController.swift; sourceTree = "<group>"; };
 		C33208D51E1488FD00CBCEC5 /* DJiOSSDK.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = DJiOSSDK.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		C33208D81E1488FD00CBCEC5 /* DJiOSSDK.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DJiOSSDK.h; sourceTree = "<group>"; };
 		C33208D91E1488FD00CBCEC5 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -94,6 +96,7 @@
 				C3B717181E148E9B00318A0E /* PartyNetworkManager.swift */,
 				C3B7171A1E148EB600318A0E /* Networker.swift */,
 				C3B717241E1492C900318A0E /* TransactionController.swift */,
+				C32CB1FF1E172B220060B657 /* SocketController.swift */,
 			);
 			name = Controllers;
 			sourceTree = "<group>";
@@ -196,6 +199,7 @@
 				C3B717171E148E7800318A0E /* LoginNetworkManager.swift in Sources */,
 				C3B717231E1492BC00318A0E /* Transaction.swift in Sources */,
 				C3B717211E148F3A00318A0E /* Location.swift in Sources */,
+				C32CB2001E172B220060B657 /* SocketController.swift in Sources */,
 				C3B717131E148E1500318A0E /* Enumerations.swift in Sources */,
 				C3B717251E1492C900318A0E /* TransactionController.swift in Sources */,
 				C3B7171B1E148EB600318A0E /* Networker.swift in Sources */,

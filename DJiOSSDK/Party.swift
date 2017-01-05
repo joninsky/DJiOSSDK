@@ -11,29 +11,79 @@ import RealmSwift
 
 public class Party: Object {
     
-    dynamic var id: String?
+    public internal(set) dynamic var id: String?
     
-    dynamic var name: String?
+    dynamic var djID: String?
     
-    var location: Location?
+    dynamic public internal(set) var name: String?
     
-    dynamic var active = false
+    public var location: Location?
+    
+    public internal(set) dynamic var publicParty = false
     
     dynamic var created_at: Date?
     
     dynamic var updated_at: Date?
     
-    private let owners = LinkingObjects(fromType: User.self, property: "usersParties")
-    
-    var owner: User? {
-        return self.owners.first
+    public convenience init?(withDictionary d: [String: Any]) {
+        
+        self.init()
+        
+        guard self.realm == nil else{
+            return
+        }
+        
+        if let name = d["partyName"] as? String {
+            self.name = name
+        }
+        
+        if let location = d["location"] as? [String: Any] {
+            if let coordinates = location["coordinates"] as? [Double] {
+                if let long = coordinates.first, let lat = coordinates.last {
+                    let partiesLocation = Location()
+                    
+                    do{
+                        try partiesLocation.addLocation(long: long, lat: lat)
+                    }catch{
+                        
+                    }
+                    
+                    
+                    self.location = partiesLocation
+                }
+            }
+        }
+        
+        if let _id = d["_id"] as? String {
+            self.id = _id
+        }
+        
+        if let _dj = d["dj"] as? String {
+            self.djID = _dj
+        }
+        
     }
     
     
-    var participants = List<User>()
-    
     func getJSON() -> [String: Any] {
-        return [PartyJSON.name.rawValue:self.name, PartyJSON.active.rawValue: self.active, PartyJSON.dj.rawValue: self.owner?.id, PartyJSON.location.rawValue: ["type": "Point", "coordinates": [self.location?.locationLongitude, self.location?.locationLatitude]]]
+        
+        var dictionary = [String: Any]()
+        
+        if let djid = self.djID {
+            dictionary[PartyJSON.dj.rawValue] = djid
+        }
+        
+        if let n = self.name {
+            dictionary[PartyJSON.name.rawValue] = n
+        }
+        
+        if let location = self.location {
+            dictionary[PartyJSON.location.rawValue] = location.getJSON()
+        }
+        
+        dictionary[PartyJSON.publicParty.rawValue] = self.publicParty
+        
+        return dictionary
     }
     
     func bindID(_ id: String) throws {
@@ -54,25 +104,8 @@ public class Party: Object {
         }
     }
     
-    func activate(_ activate: Bool) throws {
-        guard self.active != activate else{
-            return
-        }
-        
-        if let r = self.realm {
-            do{
-                try r.write {
-                    self.active = activate
-                }
-            }catch{
-                throw error
-            }
-        }else{
-            self.active = activate
-        }
-    }
     
-    func addLocation(_ loc: Location) {
+    public func addLocation(_ loc: Location) {
         if self.realm == nil {
             self.location = loc
         }else if let l = self.location{
@@ -93,6 +126,43 @@ public class Party: Object {
                 
             }
             
+        }
+    }
+    
+    public func addName(_ n: String) throws {
+        guard self.name != n else{
+            return
+        }
+        
+        if let r = self.realm {
+            do{
+                try r.write {
+                    self.name = n
+                }
+            }catch{
+                
+            }
+        }else{
+            self.name = n
+        }
+    }
+    
+    
+    public func setPublic(isPublic p: Bool) throws {
+        guard self.publicParty != p else{
+            return
+        }
+        
+        if let realm = self.realm {
+            do{
+                try realm.write{
+                    self.publicParty = p
+                }
+            }catch{
+                throw error
+            }
+        }else{
+            self.publicParty = p
         }
     }
     

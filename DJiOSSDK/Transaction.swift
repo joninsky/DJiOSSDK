@@ -18,8 +18,6 @@ public class Transaction: Object {
     
     //My Error Description
     public internal(set) dynamic var networkErrorDescription: String?
-    //Transaction ID From Server
-    public internal(set) dynamic var id: String?
     //Request properties
     public internal(set) dynamic var url: String?
     
@@ -62,10 +60,6 @@ public class Transaction: Object {
         
         if let description = self.networkErrorDescription {
             string += "Description: \(description)\n\n"
-        }
-        
-        if let i = self.id {
-            string += "Transaction ID: \(i)\n\n"
         }
         
         if let u = self.url {
@@ -171,11 +165,6 @@ public class Transaction: Object {
         if let error = e {
             self.errorRawString = "\(error)"
         }
-    }
-    
-    
-    internal func addTransactionID(_ theID: String) {
-        self.id = theID
     }
     
     

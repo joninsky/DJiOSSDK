@@ -17,7 +17,7 @@ public class Configuration {
     
     public private(set) var AppID: String?
     
-    let v: UInt64 = 6
+    let v: UInt64 = 9
     
     init?(){
         if let realmFileURL = self.configRealmFile() {
@@ -35,7 +35,7 @@ public class Configuration {
             do{
                 self.DJRealm = try Realm(configuration: config)
             }catch{
-                print("Realm needs to migrate.")
+                print("Realm needs to migrate. \(error)")
                 return nil
             }
         }else{

@@ -18,4 +18,5 @@ s.platform = :ios, '10.0'
 s.requires_arc = true
 s.source_files = 'DJiOSSDK/**/*'
 s.dependency 'RealmSwift'
+s.dependency 'Socket.IO-Client-Swift'
 end
