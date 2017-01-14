@@ -187,6 +187,20 @@ public class User: Object {
         }
     }
     
+    public func leaveParty() throws {
+        if let r = self.realm{
+            do{
+                try r.write {
+                    self.currentParty = nil
+                }
+            }catch{
+                
+            }
+        }else{
+            self.currentParty = nil
+        }
+    }
+    
     
 }
 

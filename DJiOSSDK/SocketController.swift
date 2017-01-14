@@ -68,9 +68,51 @@ public class SocketController: Networker  {
         })
     }
     
-    public func joinParty(partyID ID: String, completion: @escaping(_ didJoin: Bool) -> Void){
+    public func leaveParty(completion: @escaping(_ didLeave: Bool) -> Void) {
         
-        self.socket?.emit("joinParty", ID)
+        guard let joinedPartyID = User.loggedInUser()?.currentParty?.id else{
+            completion(false)
+            return
+        }
+        
+        self.socket?.emit("leaveParty", joinedPartyID)
+        
+        self.socket?.on("leftParty", callback: { (data, ack) in
+            guard data.count != 0 else {
+                completion(false)
+                return
+            }
+            
+            guard let number = data[0] as? NSNumber else{
+                completion(false)
+                return
+            }
+            
+            do{
+                try User.loggedInUser()?.leaveParty()
+            }catch{
+                
+            }
+            
+            print(number)
+            completion(Bool(number))
+
+        })
+        
+        
+    }
+    
+    public func joinParty(_ party: Party, completion: @escaping(_ didJoin: Bool) -> Void){
+        
+        
+        guard let userID = User.loggedInUser()?.id, let ID = party.id else{
+            completion(false)
+            return
+        }
+        
+        var info = [ID, userID]
+        
+        self.socket?.emit("joinParty", info)
         
         self.socket?.on("joinPartyResults", callback: { (data, ack) in
             
@@ -83,6 +125,12 @@ public class SocketController: Networker  {
                 completion(false)
                 return
             }
+            
+//            do{
+//                try User.loggedInUser()?.joinParty(theParty: party)
+//            }catch{
+//                
+//            }
             
             print(number)
             completion(Bool(number))
