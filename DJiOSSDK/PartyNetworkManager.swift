@@ -13,13 +13,13 @@ class PartyNetworkManager: Networker {
         
         let transaction = Transaction(withDate: Date())
         
-//        guard Configuration.internetStatus != .notReachable else{
-//            transaction.addErrorDescription(theError: NetworkError.noInternet)
-//            TransactionController.shared.addNewTransaction(transaction: transaction)
-//            completion(NetworkError.noInternet)
-//            return
-//        }
-        
+        guard Networker.internetStatus != .notReachable else{
+            transaction.addErrorDescription(theError: NetworkError.noInternet)
+            TransactionController.shared.addNewTransaction(transaction: transaction)
+            completion(NetworkError.noInternet)
+            return
+        }
+    
         guard let finalURL = URL(string: self.urlString)?.appendingPathComponent("party") else{
             transaction.addErrorDescription(theError: NetworkError.badURL)
             TransactionController.shared.addNewTransaction(transaction: transaction)
@@ -27,10 +27,7 @@ class PartyNetworkManager: Networker {
             return
         }
         
-        var request = URLRequest(url: finalURL)
-        
-        request.httpMethod = HTTPMethod.POST.rawValue
-        request.setValue(contentTypeValue, forHTTPHeaderField: contentTypeHeader)
+        var request = self.getRequest(withURL: finalURL, forMethodType: HTTPMethod.POST)
         
         do{
             var JSON = p.getJSON()
@@ -76,7 +73,7 @@ class PartyNetworkManager: Networker {
                     
                     print(JSON)
                     
-                    guard let id = JSON["id"] as? String else {
+                    guard let party = JSON["party"] as? [String: Any] else {
                         self.mainQueue.async {
                             transaction.addErrorDescription(theError: NetworkError.failedToParseJSON(nil))
                             TransactionController.shared.addNewTransaction(transaction: transaction)
@@ -85,11 +82,11 @@ class PartyNetworkManager: Networker {
                         return
                     }
                     
-                    print(id)
+                    print(party)
                     
                     self.mainQueue.async {
                         do{
-                            try p.bindID(id)
+                            try p.crackJSON(theJSON: party)
                             TransactionController.shared.addNewTransaction(transaction: transaction)
                             completion(nil)
                         }catch{
@@ -121,16 +118,23 @@ class PartyNetworkManager: Networker {
     }
     
     
-    public func deleteParty(thePartyID ID: String, completion: @escaping(_ error: NetworkError?) -> Void) {
+    public func deleteParty(theParty party: Party, completion: @escaping(_ error: NetworkError?) -> Void) {
         
         let transaction = Transaction(withDate: Date())
         
-        //        guard Configuration.internetStatus != .notReachable else{
-        //            transaction.addErrorDescription(theError: NetworkError.noInternet)
-        //            TransactionController.shared.addNewTransaction(transaction: transaction)
-        //            completion(NetworkError.noInternet)
-        //            return
-        //        }
+        guard Networker.internetStatus != .notReachable else{
+            transaction.addErrorDescription(theError: NetworkError.noInternet)
+            TransactionController.shared.addNewTransaction(transaction: transaction)
+            completion(NetworkError.noInternet)
+            return
+        }
+        
+        guard let ID = party.id else{
+            transaction.addErrorDescription(theError: NetworkError.badURL)
+            TransactionController.shared.addNewTransaction(transaction: transaction)
+            completion(NetworkError.badURL)
+            return
+        }
         
         guard let finalURL = URL(string: self.urlString)?.appendingPathComponent("party").appendingPathComponent(ID) else{
             transaction.addErrorDescription(theError: NetworkError.badURL)
@@ -139,12 +143,7 @@ class PartyNetworkManager: Networker {
             return
         }
         
-        print(finalURL)
-        
-        var request = URLRequest(url: finalURL)
-        
-        request.httpMethod = HTTPMethod.DELETE.rawValue
-        request.setValue(contentTypeValue, forHTTPHeaderField: contentTypeHeader)
+        var request = self.getRequest(withURL: finalURL, forMethodType: HTTPMethod.DELETE)
 
         
         let task = self.session.dataTask(with: request) { (data, response, error) in
@@ -178,8 +177,15 @@ class PartyNetworkManager: Networker {
                     }
                     
                     self.mainQueue.async {
-                        TransactionController.shared.addNewTransaction(transaction: transaction)
-                        completion(nil)
+                        do{
+                            try party.delete()
+                            TransactionController.shared.addNewTransaction(transaction: transaction)
+                            completion(nil)
+                        }catch{
+                            transaction.addErrorDescription(theError: NetworkError.realmError(e: error))
+                            TransactionController.shared.addNewTransaction(transaction: transaction)
+                            completion(NetworkError.realmError(e: error))
+                        }
                     }
                     
                 default:

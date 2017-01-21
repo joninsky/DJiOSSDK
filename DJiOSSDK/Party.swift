@@ -13,7 +13,9 @@ public class Party: Object {
     
     public internal(set) dynamic var id: String?
     
-    dynamic var djID: String?
+    dynamic var dj: User?
+    
+    let participants = List<User>()
     
     dynamic public internal(set) var name: String?
     
@@ -26,86 +28,188 @@ public class Party: Object {
     dynamic var updated_at: Date?
     
     public convenience init?(withDictionary d: [String: Any]) {
-        
         self.init()
+        print(d)
         
-        guard self.realm == nil else{
-            return
+        guard let _ = d[PartyJSON.name.rawValue] as? String else {
+            return nil
         }
         
-        if let name = d["partyName"] as? String {
-            self.name = name
+        guard let _ = d[PartyJSON.location.rawValue] as? [String: Any] else {
+            return nil
         }
         
-        if let location = d["location"] as? [String: Any] {
-            if let coordinates = location["coordinates"] as? [Double] {
-                if let long = coordinates.first, let lat = coordinates.last {
-                    let partiesLocation = Location()
-                    
-                    do{
-                        try partiesLocation.addLocation(long: long, lat: lat)
-                    }catch{
-                        
-                    }
-                    
-                    
-                    self.location = partiesLocation
-                }
-            }
+        do{
+            try self.crackJSON(theJSON: d)
+        }catch{
+            
         }
-        
-        if let _id = d["_id"] as? String {
-            self.id = _id
-        }
-        
-        if let _dj = d["dj"] as? String {
-            self.djID = _dj
-        }
-        
     }
     
     
     func getJSON() -> [String: Any] {
-        
-        var dictionary = [String: Any]()
-        
-        if let djid = self.djID {
-            dictionary[PartyJSON.dj.rawValue] = djid
-        }
-        
-        if let n = self.name {
-            dictionary[PartyJSON.name.rawValue] = n
-        }
-        
-        if let location = self.location {
-            dictionary[PartyJSON.location.rawValue] = location.getJSON()
-        }
-        
-        dictionary[PartyJSON.publicParty.rawValue] = self.publicParty
-        
-        return dictionary
+        return [PartyJSON.id.rawValue: self.id,
+                PartyJSON.name.rawValue: self.name,
+                PartyJSON.dj.rawValue: self.dj?.id,
+                PartyJSON.participants.rawValue: self.getParticipants(),
+                PartyJSON.location.rawValue: self.location?.getJSON(),
+                PartyJSON.publicParty.rawValue: self.publicParty]
     }
     
-    func bindID(_ id: String) throws {
-        guard self.id != id else{
-            return
+    
+    func getParticipants() -> [String] {
+        var array = [String]()
+        for p in self.participants {
+            guard let id = p.id else{
+                break
+            }
+            array.append(id)
         }
-        
-        if let r = self.realm {
+        return array
+    }
+    
+    
+    func delete() throws {
+        if let realm = self.realm {
             do{
-                try r.write {
-                    self.id = id
+                try realm.write {
+                    realm.delete(self)
                 }
             }catch{
                 throw error
             }
-        }else{
-            self.id = id
         }
     }
     
+    internal func crackJSON(theJSON JSON: [String: Any]) throws {
+        
+        if let id = JSON[PartyJSON.id.rawValue] as? String {
+            if let realm = self.realm {
+                do{
+                    try realm.write{
+                        self.id = id
+                    }
+                }catch{
+                    throw error
+                }
+            }else{
+                self.id = id
+            }
+        }
+        
+        if let name = JSON[PartyJSON.name.rawValue] as? String {
+            if let realm = self.realm {
+                do{
+                    try realm.write{
+                        self.name = name
+                    }
+                }catch{
+                    throw error
+                }
+            }else{
+                self.name = name
+            }
+        }
+        
+        if let dj = JSON[PartyJSON.dj.rawValue] as? String {
+            if let realm = self.realm {
+                do{
+                    try realm.write{
+                        self.dj = realm.objects(User.self).filter("id = %@", dj).first
+                    }
+                }catch{
+                    throw error
+                }
+            }else{
+                self.dj = Configuration.defaultConfiguration?.DJRealm.objects(User.self).filter("id = %@", dj).first
+            }
+        }
+        
+        if let participants = JSON[PartyJSON.participants.rawValue] as? [String] {
+            if let realm = self.realm {
+                do{
+                    try realm.write{
+                        
+                    }
+                }catch{
+                    throw error
+                }
+            }else{
+                
+            }
+        }
+        
+        if let locationData = JSON[PartyJSON.location.rawValue] as? [String: Any], let coordinates = locationData["coordinates"] as? [Double], let long = coordinates.first, let lat = coordinates.last {
+            
+            let location = Location()
+            
+            do{
+                try location.addLocation(long: long, lat: lat)
+            }catch{
+                throw error
+            }
+            
+            if let realm = self.realm {
+                do{
+                    try realm.write{
+                        self.location = location
+                    }
+                }catch{
+                    throw error
+                }
+            }else{
+                self.location = location
+            }
+        }
+        
+        if let publicParty = JSON[PartyJSON.publicParty.rawValue] as? NSNumber {
+            if let realm = self.realm {
+                do{
+                    try realm.write{
+                        self.publicParty = Bool(publicParty)
+                    }
+                }catch{
+                    throw error
+                }
+            }else{
+                self.publicParty = Bool(publicParty)
+            }
+        }
+        
+        if let created = JSON[PartyJSON.created_at.rawValue] as? Date {
+            if let realm = self.realm {
+                do{
+                    try realm.write{
+                        self.created_at = created
+                    }
+                }catch{
+                    throw error
+                }
+            }else{
+                self.created_at = created
+            }
+        }
+        
+        if let updated = JSON[PartyJSON.updated_at.rawValue] as? Date {
+            if let realm = self.realm {
+                do{
+                    try realm.write{
+                        self.updated_at = updated
+                    }
+                }catch{
+                    throw error
+                }
+            }else{
+                self.updated_at = updated
+            }
+        }
+        
+    }
     
-    public func addLocation(_ loc: Location) {
+
+    
+    
+    public func updateLocation(_ loc: Location) {
         if self.realm == nil {
             self.location = loc
         }else if let l = self.location{
@@ -129,7 +233,7 @@ public class Party: Object {
         }
     }
     
-    public func addName(_ n: String) throws {
+    public func updateName(_ n: String) throws {
         guard self.name != n else{
             return
         }

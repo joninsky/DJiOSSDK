@@ -33,25 +33,25 @@ enum HTTPMethod: String {
     case DELETE = "DELETE"
 }
 
-enum UserJSON: String {
+public enum UserJSON: String {
     case id = "_id"
     case name = "name"
     case djName = "djName"
     case email = "email"
-    case facebook_id = "facebook_id"
     case facebook_login = "facebook_login"
+    case facebook_id = "facebook_id"
     case facebookToken = "facebookToken"
     case spotify_login = "spotify_login"
     case djscore = "djscore"
     case pushToken = "pushToken"
     case pushSandbox = "pushSandbox"
     case myParty = "myParty"
-    case currentParty = "currentParty"
+    case participatingParty = "participatingParty"
     case created_at = "created_at"
     case updated_at = "updated_at"
 }
 
-enum PartyJSON: String {
+public enum PartyJSON: String {
     case id = "_id"
     case name = "partyName"
     case dj = "dj"

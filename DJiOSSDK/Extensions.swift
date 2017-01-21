@@ -10,7 +10,26 @@ import Foundation
 import SystemConfiguration
 
 public extension Configuration {
-    
+
+    public func isDevelopmentEnvironment() -> Bool {
+        guard let filePath = Bundle.main.path(forResource: "embedded", ofType:"mobileprovision") else {
+            return false
+        }
+        do {
+            let url = URL(fileURLWithPath: filePath)
+            let data = try Data(contentsOf: url)
+            guard let string = String(data: data, encoding: .ascii) else {
+                return false
+            }
+            if string.contains("<key>aps-environment</key>\n\t\t<string>development</string>") {
+                return true
+            }
+        } catch {}
+        return false
+    }
+}
+
+public extension Networker {
     static public var internetStatus: InternetStatus {
         
         var zeroAddress = sockaddr_in()
@@ -49,23 +68,6 @@ public extension Configuration {
         else {
             return .notReachable
         }
-    }
-    
-    public func isDevelopmentEnvironment() -> Bool {
-        guard let filePath = Bundle.main.path(forResource: "embedded", ofType:"mobileprovision") else {
-            return false
-        }
-        do {
-            let url = URL(fileURLWithPath: filePath)
-            let data = try Data(contentsOf: url)
-            guard let string = String(data: data, encoding: .ascii) else {
-                return false
-            }
-            if string.contains("<key>aps-environment</key>\n\t\t<string>development</string>") {
-                return true
-            }
-        } catch {}
-        return false
     }
 }
 

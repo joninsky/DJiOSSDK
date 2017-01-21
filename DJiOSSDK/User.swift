@@ -23,50 +23,42 @@ public class User: Object {
     dynamic public internal(set) var spotify_login = false
     dynamic public internal(set) var djScore: Double = 0
     dynamic internal var pushToken: String?
-    dynamic internal var pushSandbox: String?
-    dynamic public internal(set) var myParty: Party?
-    dynamic public internal(set) var currentParty: Party?
+    dynamic internal var pushSandbox: Bool = false
+    
+    internal var potentialParties = LinkingObjects(fromType: Party.self, property: "dj")
+    
+    public var myParty: Party? {
+        return self.potentialParties.first
+    }
+    let participatingPartys = LinkingObjects(fromType: Party.self, property: "participants")
+    public var participatingParty: Party? {
+        return self.participatingPartys.first
+    }
     dynamic public internal(set) var created_at: Date?
     dynamic public internal(set) var updated_at: Date?
     dynamic public internal(set) var loggedIn = false
     
-    public convenience init?(withFaceBookID fID: String, faceBookToken t: String, andEmail e: String) {
-        self.init()
-        if let r = self.realm {
-            do{
-                try r.write{
-                    self.facebookID = fID
-                    self.facebookToken = t
-                    self.facebook_login = true
-                    self.email = e
-                    self.djScore = 2.0
-                }
-            }catch{
-                return nil
-            }
-        }else{
-            self.facebookID = fID
-            self.facebookToken = t
-            self.facebook_login = true
-            self.email = e
-            self.djScore = 2.0
-        }
-    }
-    
     public convenience init?(withDictionary d: [String: Any]) {
         self.init()
-        if let name = d[UserJSON.name.rawValue] as? String {
-            self.name = name
+        guard let _ = d[UserJSON.name.rawValue] as? String else {
+            return nil
         }
         
-        if let djName = d[UserJSON.djName.rawValue] as? String {
-            self.djName = djName
+        
+        guard let _ = d[UserJSON.facebook_id.rawValue] as? String else {
+            return nil
         }
         
-        if let facebook = d[UserJSON.facebook_id.rawValue] as? String {
-            self.facebookID = facebook
+        
+        guard let _ = d[UserJSON.facebookToken.rawValue] as? String else{
+            return nil
         }
         
+        do{
+            try self.crackJSON(theJSON: d)
+        }catch{
+            
+        }
     }
     
     internal func getJSON() -> [String: Any] {
@@ -82,33 +74,322 @@ public class User: Object {
                 UserJSON.pushSandbox.rawValue: self.pushSandbox]
     }
     
+    internal func crackJSON(theJSON JSON: [String: Any]) throws {
+        
+        if let id = JSON[UserJSON.id.rawValue] as? String {
+            if let realm = self.realm {
+                do{
+                    try realm.write {
+                        self.id = id
+                        self.id_string = id
+                    }
+                }catch{
+                    throw error
+                }
+            }else{
+                self.id = id
+                self.id_string = id
+            }
+        }
+        
+        if let name = JSON[UserJSON.name.rawValue] as? String {
+            if let realm = self.realm {
+                do{
+                    try realm.write {
+                        self.name = name
+                    }
+                }catch{
+                    throw error
+                }
+            }else{
+                self.name = name
+            }
+        }
+        
+        if let djName = JSON[UserJSON.djName.rawValue] as? String {
+            if let realm = self.realm {
+                do{
+                    try realm.write {
+                        self.djName = djName
+                    }
+                }catch{
+                    throw error
+                }
+            }else{
+                self.djName = djName
+            }
+        }
+        
+        if let email = JSON[UserJSON.email.rawValue] as? String {
+            if let realm = self.realm {
+                do{
+                    try realm.write {
+                         self.email = email
+                    }
+                }catch{
+                    throw error
+                }
+            }else{
+                self.email = email
+            }
+        }
+    
+        if let faceBookLogin = JSON[UserJSON.facebook_login.rawValue] as? NSNumber {
+            if let realm = self.realm {
+                do{
+                    try realm.write {
+                        self.facebook_login = Bool(faceBookLogin)
+                    }
+                }catch{
+                    throw error
+                }
+            }else{
+                self.facebook_login = Bool(faceBookLogin)
+            }
+        }
+        
+        if let faceBookID = JSON[UserJSON.facebook_id.rawValue] as? String {
+            if let realm = self.realm {
+                do{
+                    try realm.write {
+                        self.facebookID = faceBookID
+                    }
+                }catch{
+                    throw error
+                }
+            }else{
+                self.facebookID = faceBookID
+            }
+        }
+        
+        if let faceBookToken = JSON[UserJSON.facebookToken.rawValue] as? String {
+            if let realm = self.realm {
+                do{
+                    try realm.write {
+                        self.facebookToken = faceBookToken
+                    }
+                }catch{
+                    throw error
+                }
+            }else{
+                self.facebookToken = faceBookToken
+            }
+        }
+        
+        if let spotifyLogin = JSON[UserJSON.spotify_login.rawValue] as? NSNumber {
+            if let realm = self.realm {
+                do{
+                    try realm.write {
+                        self.spotify_login = Bool(spotifyLogin)
+                    }
+                }catch{
+                    throw error
+                }
+            }else{
+                self.spotify_login = Bool(spotifyLogin)
+            }
+        }
+        
+        if let score = JSON[UserJSON.djscore.rawValue] as? Double {
+            if let realm = self.realm {
+                do{
+                    try realm.write {
+                        self.djScore = score
+                    }
+                }catch{
+                    throw error
+                }
+            }else{
+                self.djScore = score
+            }
+        }
+        
+        if let pushToken = JSON[UserJSON.pushToken.rawValue] as? String {
+            if let realm = self.realm {
+                do{
+                    try realm.write {
+                        self.pushToken = pushToken
+                    }
+                }catch{
+                    throw error
+                }
+            }else{
+                self.pushToken = pushToken
+            }
+        }
+        
+        if let sandBoxToken = JSON[UserJSON.pushSandbox.rawValue] as? NSNumber {
+            if let realm = self.realm {
+                do{
+                    try realm.write {
+                        self.pushSandbox = Bool(sandBoxToken)
+                    }
+                }catch{
+                    throw error
+                }
+            }else{
+                self.pushSandbox = Bool(sandBoxToken)
+            }
+        }
+        
+        if let myParty = JSON[UserJSON.myParty.rawValue] as? String {
+            if let realm = self.realm {
+                do{
+                    try realm.write {
+                        
+                    }
+                }catch{
+                    throw error
+                }
+            }else{
+               // self.myParty
+            }
+        }
+        
+        if let participatingParty = JSON[UserJSON.participatingParty.rawValue] as? String {
+            if let realm = self.realm {
+                do{
+                    try realm.write {
+                        
+                    }
+                }catch{
+                    throw error
+                }
+            }else{
+                
+            }
+        }
+        
+        if let created = JSON[UserJSON.created_at.rawValue] as? Date {
+            if let realm = self.realm {
+                do{
+                    try realm.write {
+                        self.created_at = created
+                    }
+                }catch{
+                    throw error
+                }
+            }else{
+                self.created_at = created
+            }
+        }
+        
+        if let updated = JSON[UserJSON.updated_at.rawValue] as? Date {
+            if let realm = self.realm {
+                do{
+                    try realm.write {
+                        self.updated_at = updated
+                    }
+                }catch{
+                    throw error
+                }
+            }else{
+                self.updated_at = updated
+            }
+        }
+        
+    }
+    
     //MARK: Property Setters
-    public func updateName( _ n: String) throws {
-        guard self.name != n else{
+    public func updateName( _ n: String, completion: @escaping (_ error: NetworkError?) -> Void) {
+        
+        guard self.name != n else {
+            completion(nil)
             return
         }
         
-        if let r = self.realm {
-            do{
-                try r.write {
-                    self.name = n
+        let controller = LoginNetworkManager()
+        
+        controller.updateUser(theUser: self, updates: [UserJSON.name.rawValue: n]) { (error) in
+            if let e = error {
+                completion(e)
+            }else{
+                do{
+                    try self.crackJSON(theJSON: [UserJSON.name.rawValue: n])
+                    completion(nil)
+                }catch{
+                    completion(NetworkError.realmError(e: error))
                 }
-            }catch{
-                
             }
-        }else{
-            self.name = n
+        }
+    }
+    
+    public func updateEmail( _ e: String, completion: @escaping (_ error: NetworkError?) -> Void) {
+        guard self.email != e else {
+            completion(nil)
+            return
+        }
+        
+        let update = [UserJSON.email.rawValue: e]
+        
+        let controller = LoginNetworkManager()
+        
+        controller.updateUser(theUser: self, updates: update) { (error) in
+            if let e = error {
+                completion(e)
+            }else{
+                do{
+                    try self.crackJSON(theJSON: update)
+                    completion(nil)
+                }catch{
+                    completion(NetworkError.realmError(e: error))
+                }
+            }
+        }
+    }
+    
+    public func updateDJName( _ djName: String, completion: @escaping (_ error: NetworkError?) -> Void) {
+        guard self.djName != djName else {
+            completion(nil)
+            return
+        }
+        
+        let update = [UserJSON.djName.rawValue: djName]
+        
+        let controller = LoginNetworkManager()
+        
+        controller.updateUser(theUser: self, updates: update) { (error) in
+            if let e = error {
+                completion(e)
+            }else{
+                do{
+                    try self.crackJSON(theJSON: update)
+                }catch{
+                    completion(NetworkError.realmError(e: error))
+                }
+            }
         }
         
     }
     
-    public func updateEmail( _ e: String) throws {
-        
-    }
-    
-    public func updateDJName( _ djName: String) throws {
+    public func updatePushNotificationToken( _ token: String, production: Bool, completion: @escaping ( _ error: NetworkError?) -> Void) {
         
         
+        var updates = [String: Any]()
+        
+        guard self.pushToken != token else{
+            completion(nil)
+            return
+        }
+        
+        updates = [UserJSON.pushToken.rawValue: token]
+        
+        updates[UserJSON.pushSandbox.rawValue] = production
+        
+        let controller = LoginNetworkManager()
+        
+        controller.updateUser(theUser: self, updates: updates) { (error) in
+            
+            if let e = error {
+                completion(e)
+            }else{
+                do{
+                    try self.crackJSON(theJSON: updates)
+                }catch{
+                    completion(NetworkError.realmError(e: error))
+                }
+            }
+        }
     }
     
     
@@ -119,22 +400,16 @@ public class User: Object {
             if let e = error {
                 completion(e)
             }else{
-                if let r = self.realm {
-                    do{
-                        try r.write {
-                            self.myParty = p
-                        }
-                    }catch{
-                        completion(NetworkError.realmError(e: error))
-                        return
+                do{
+                    try Configuration.defaultConfiguration?.DJRealm.write {
+                        Configuration.defaultConfiguration?.DJRealm.add(p)
                     }
-                }else{
-                    self.myParty = p
+                    completion(nil)
+                }catch{
+                    completion(NetworkError.realmError(e: error))
                 }
-                completion(nil)
+                
             }
-            
-            
         }
         
     }
@@ -142,31 +417,17 @@ public class User: Object {
     
     public func endParty(completion: @escaping (_ error: NetworkError?) -> Void) {
         
-        guard let party = self.myParty, let id = party.id else{
+        guard let party = self.myParty else{
             completion(NetworkError.realmError(e: nil))
             return
         }
 
         let net = PartyNetworkManager()
         
-        net.deleteParty(thePartyID: id) { (error) in
+        net.deleteParty(theParty: party) { (error) in
             if let e = error {
                 completion(e)
             }else{
-                if let r = self.realm {
-                    do{
-                        try r.write {
-                            r.delete(party)
-                        }
-                        
-                    }catch{
-                        completion(NetworkError.realmError(e: error))
-                        return
-                    }
-                }else{
-                    self.myParty = nil
-                }
-                
                 completion(nil)
             }
         }
@@ -174,31 +435,31 @@ public class User: Object {
     }
     
     public func joinParty(theParty p: Party) throws {
-        if let r = self.realm {
-            do{
-                try r.write {
-                    self.currentParty = p
-                }
-            }catch{
-                throw error
-            }
-        }else{
-            self.currentParty = p
-        }
+//        if let r = self.realm {
+//            do{
+//                try r.write {
+//                    self.participatingParty = p
+//                }
+//            }catch{
+//                throw error
+//            }
+//        }else{
+//            self.participatingParty = p
+//        }
     }
     
     public func leaveParty() throws {
-        if let r = self.realm{
-            do{
-                try r.write {
-                    self.currentParty = nil
-                }
-            }catch{
-                
-            }
-        }else{
-            self.currentParty = nil
-        }
+//        if let r = self.realm{
+//            do{
+//                try r.write {
+//                    self.participatingParty = nil
+//                }
+//            }catch{
+//                
+//            }
+//        }else{
+//            self.participatingParty = nil
+//        }
     }
     
     

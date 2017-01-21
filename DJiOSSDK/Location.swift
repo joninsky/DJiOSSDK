@@ -34,7 +34,7 @@ public class Location: Object {
                     self.locationLatitude = lat
                 }
             }catch{
-                
+                throw error
             }
         }else{
             self.locationLongitude = long
