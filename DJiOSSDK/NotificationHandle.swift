@@ -9,14 +9,10 @@
 import Foundation
 import UserNotifications
 
-enum VoteType: Int {
-    case skip = 0
-    case replay = 1
-    case replayPrevious = 2
-    case approve = 3
-}
 
-let VoteNotification = NSNotification.Name(rawValue: "VoteNotificaiton")
+public let VoteNotification = NSNotification.Name(rawValue: "VoteNotificaiton")
+
+public let InvitationNotification = NSNotification.Name(rawValue: "InvitationReceived")
 
 public class NotificationHandle: NSObject, UNUserNotificationCenterDelegate {
     
@@ -61,7 +57,7 @@ public class NotificationHandle: NSObject, UNUserNotificationCenterDelegate {
         }
         
         if let user = User.loggedInUser() {
-            user.updatePushNotificationToken(hexString, production: !self.isDevelopmentEnvironment(), completion: { (error) in
+            user.updatePushNotificationToken(hexString, sandBox: self.isSandBox(), completion: { (error) in
                 
                 print(error)
             })
@@ -90,51 +86,56 @@ public class NotificationHandle: NSObject, UNUserNotificationCenterDelegate {
         
         print(packet)
         
-        if let voteType = userInfo["vote"] as? Int {
-            guard let vote = VoteType(rawValue: voteType) else{
+        if let voteType = userInfo["vote"] as? [String: Any] {
+            
+            
+            guard let voteRaw = voteType["rawVote"] as? Int else{
                 return
             }
-//            switch vote {
-//            case VoteType.approve:
-//                if let a = alert {
-//                    let notificaiton = NotificationVote(a, type: .approve)
-//                    NotificationCenter.default.post(name: VoteNotification, object: notificaiton)
-//                }
-//            case VoteType.skip:
-//                MPMusicPlayerController.systemMusicPlayer().skipToNextItem()
-//                if let a = alert {
-//                    let notificaiton = NotificationVote(a, type: .skip)
-//                    NotificationCenter.default.post(name: VoteNotification, object: notificaiton)
-//                }
-//            case VoteType.replay:
-//                MPMusicPlayerController.systemMusicPlayer().skipToBeginning()
-//                if let a = alert {
-//                    let notificaiton = NotificationVote(a, type: .replay)
-//                    NotificationCenter.default.post(name: VoteNotification, object: notificaiton)
-//                }
-//            case VoteType.replayPrevious:
-//                MPMusicPlayerController.systemMusicPlayer().skipToPreviousItem()
-//                if let a = alert {
-//                    let notificaiton = NotificationVote(a, type: .replayPrevious)
-//                    NotificationCenter.default.post(name: VoteNotification, object: notificaiton)
-//                }
-//            }
-            print(vote)
+            
+            let keys = VoteJSON()
+            
+            var newVoteInfo: [String: Any] = [keys.time: Date(), keys.voteType: voteRaw]
+            
+            if let user = voteType["user"] as? String {
+                newVoteInfo[keys.voterID] = user
+            }
+            
+            if let userName = voteType["userName"] as? String {
+                newVoteInfo[keys.userName] = userName
+            }
+            
+            
+            guard let vote = Vote(withDictionary: newVoteInfo) else{
+                return
+            }
+            
+            do{
+                try User.loggedInUser()?.myParty?.addVote(theVote: vote)
+            }catch{
+                
+            }
         }
         
-        if let invitation = packet["invitation"] as? [String:AnyObject] {
-            print(invitation)
+        if let partyInfo = userInfo["invitation"] as? [String: Any] {
+            guard let invitedParty = Party(withDictionary: partyInfo) else {
+                completion(UIBackgroundFetchResult.failed)
+                return
+            }
             
-            if let partyID = invitation["id"] as? Int {
-                print(partyID)
-                
+            do{
+                try User.loggedInUser()?.addInvitation(invitedparty: invitedParty)
+                NotificationCenter.default
+            }catch{
+                completion(UIBackgroundFetchResult.failed)
+                return
             }
         }
         completion(UIBackgroundFetchResult.newData)
     }
     
     
-    public func isDevelopmentEnvironment() -> Bool {
+    public func isSandBox() -> Bool {
         guard let filePath = Bundle.main.path(forResource: "embedded", ofType:"mobileprovision") else {
             return false
         }

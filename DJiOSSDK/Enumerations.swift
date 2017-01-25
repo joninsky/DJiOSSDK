@@ -62,6 +62,18 @@ public enum PartyJSON: String {
     case updated_at = "updated_at"
 }
 
+public struct VoteJSON {
+    
+    let voterID = "voterID"
+    
+    let userName = "userName"
+    
+    let voteType = "voteType"
+    
+    let time = "time"
+    
+}
+
 
 
 public enum LogOutError: Error {
@@ -72,4 +84,12 @@ public enum LogOutError: Error {
 public enum LogInError: Error {
     case noRealm
     case realmError(e: Error)
+}
+
+public enum VoteType: Int {
+    case unknown = 0
+    case like = 1
+    case skip = 2
+    case repeatTrack = 3
+    case repeatPrevious = 4
 }

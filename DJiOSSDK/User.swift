@@ -21,7 +21,7 @@ public class User: Object {
     dynamic public internal(set) var facebookID: String?
     dynamic internal var facebookToken: String?
     dynamic public internal(set) var spotify_login = false
-    dynamic public internal(set) var djScore: Double = 0
+    dynamic public internal(set) var djScore: Double = 0.9
     dynamic internal var pushToken: String?
     dynamic internal var pushSandbox: Bool = false
     
@@ -37,6 +37,8 @@ public class User: Object {
     dynamic public internal(set) var created_at: Date?
     dynamic public internal(set) var updated_at: Date?
     dynamic public internal(set) var loggedIn = false
+    
+    public internal(set) dynamic var invitation: Party?
     
     public convenience init?(withDictionary d: [String: Any]) {
         self.init()
@@ -62,16 +64,18 @@ public class User: Object {
     }
     
     internal func getJSON() -> [String: Any] {
-        return [UserJSON.name.rawValue: self.name,
-                UserJSON.djName.rawValue: self.djName,
-                UserJSON.email.rawValue: self.email,
-                UserJSON.facebook_id.rawValue: self.facebookID,
-                UserJSON.facebook_login.rawValue: self.facebook_login,
-                UserJSON.facebookToken.rawValue: self.facebookToken,
-                UserJSON.spotify_login.rawValue: self.spotify_login,
-                UserJSON.djscore.rawValue: self.djScore,
-                UserJSON.pushToken.rawValue: self.pushToken,
-                UserJSON.pushSandbox.rawValue: self.pushSandbox]
+        var object: [String: Any] = [UserJSON.name.rawValue: self.name,
+                      UserJSON.djName.rawValue: self.djName,
+                      UserJSON.email.rawValue: self.email,
+                      UserJSON.facebook_id.rawValue: self.facebookID,
+                      UserJSON.facebook_login.rawValue: self.facebook_login,
+                      UserJSON.facebookToken.rawValue: self.facebookToken,
+                      UserJSON.spotify_login.rawValue: self.spotify_login,
+                      UserJSON.djscore.rawValue: self.djScore,
+                      UserJSON.pushToken.rawValue: self.pushToken,
+                      UserJSON.pushSandbox.rawValue: self.pushSandbox]
+        
+        return object
     }
     
     internal func crackJSON(theJSON JSON: [String: Any]) throws {
@@ -233,17 +237,39 @@ public class User: Object {
         }
         
         if let myParty = JSON[UserJSON.myParty.rawValue] as? String {
-            if let realm = self.realm {
-                do{
-                    try realm.write {
-                        
+           
+            if self.myParty?.id != myParty {
+                if let party = self.realm?.objects(Party.self).filter("id = %@", myParty).first {
+                    if let realm = self.realm {
+                        do{
+                            try realm.write {
+                                party.dj = self
+                            }
+                        }catch{
+                            throw error
+                        }
+                    }else{
+                        party.dj = self
                     }
-                }catch{
-                    throw error
+                }else{
+                    let manager = PartyNetworkManager()
+                    manager.getParty(withID: myParty, completion: { (error, party) in
+                        if let p = party {
+                            if p.realm == nil {
+                                do{
+                                    try Configuration.defaultConfiguration?.DJRealm.write {
+                                        Configuration.defaultConfiguration?.DJRealm.add(p)
+                                    }
+                                }catch{
+                                    
+                                }
+                            }
+                        }
+                    })
                 }
-            }else{
-               // self.myParty
             }
+            
+            
         }
         
         if let participatingParty = JSON[UserJSON.participatingParty.rawValue] as? String {
@@ -362,19 +388,14 @@ public class User: Object {
         
     }
     
-    public func updatePushNotificationToken( _ token: String, production: Bool, completion: @escaping ( _ error: NetworkError?) -> Void) {
+    public func updatePushNotificationToken( _ token: String, sandBox: Bool, completion: @escaping ( _ error: NetworkError?) -> Void) {
         
         
         var updates = [String: Any]()
         
-        guard self.pushToken != token else{
-            completion(nil)
-            return
-        }
-        
         updates = [UserJSON.pushToken.rawValue: token]
         
-        updates[UserJSON.pushSandbox.rawValue] = production
+        updates[UserJSON.pushSandbox.rawValue] = sandBox
         
         let controller = LoginNetworkManager()
         
@@ -389,6 +410,56 @@ public class User: Object {
                     completion(NetworkError.realmError(e: error))
                 }
             }
+        }
+    }
+    
+    
+    public func addInvitation( invitedparty party: Party) throws {
+        if let realm = self.realm {
+            do{
+                try realm.write {
+                    self.invitation = party
+                }
+            }catch{
+                throw error
+            }
+        }else{
+            self.invitation = party
+        }
+    }
+    
+    public func accepetInvitation(completion: @escaping (_ error: NetworkError?) -> Void) {
+        guard let party = self.invitation else {
+            completion(NetworkError.realmError(e: nil))
+            return
+        }
+        
+        self.joinParty(theParty: party) { (error) in
+            if let e = error {
+                completion(e)
+            }else{
+                do{
+                    try self.declineInvitation()
+                    completion(nil)
+                }catch{
+                    completion(NetworkError.realmError(e: error))
+                }
+            }
+        }
+    }
+    
+    
+    public func declineInvitation() throws {
+        if let realm = self.realm {
+            do{
+                try realm.write {
+                    self.invitation = nil
+                }
+            }catch{
+                throw error
+            }
+        }else{
+            self.invitation = nil
         }
     }
     
@@ -434,32 +505,90 @@ public class User: Object {
         
     }
     
-    public func joinParty(theParty p: Party) throws {
-//        if let r = self.realm {
-//            do{
-//                try r.write {
-//                    self.participatingParty = p
-//                }
-//            }catch{
-//                throw error
-//            }
-//        }else{
-//            self.participatingParty = p
-//        }
+    public func joinParty(theParty p: Party, completion: @escaping ( _ error: NetworkError?) -> Void) {
+        
+        guard let id = self.id else {
+            completion(NetworkError.realmError(e: nil))
+            return
+        }
+        
+        var participants = p.getParticipants()
+        
+        if !participants.contains(id) {
+            participants.append(id)
+        }
+        
+        let updates = [PartyJSON.participants.rawValue: participants]
+        
+        let manager = PartyNetworkManager()
+        
+        manager.updateParty(theParty: p, updates: updates) { (error) in
+            if let e = error{
+                completion(e)
+            }else{
+                
+                guard let realm = Configuration.defaultConfiguration?.DJRealm else {
+                    completion(NetworkError.realmError(e: nil))
+                    return
+                }
+                
+                do{
+                    try realm.write {
+                        realm.add(p)
+                    }
+                    try p.crackJSON(theJSON: updates)
+                    try self.crackJSON(theJSON: [UserJSON.participatingParty.rawValue: id])
+                    completion(nil)
+                }catch{
+                    completion(NetworkError.realmError(e: error))
+                }
+                
+            }
+        }
     }
     
-    public func leaveParty() throws {
-//        if let r = self.realm{
-//            do{
-//                try r.write {
-//                    self.participatingParty = nil
-//                }
-//            }catch{
-//                
-//            }
-//        }else{
-//            self.participatingParty = nil
-//        }
+    public func leaveParty(completion: @escaping (_ error: NetworkError?) -> Void) {
+
+        guard let party = self.participatingParty, let ID = party.id, let userID = self.id else {
+            completion(NetworkError.realmError(e: nil))
+            return
+        }
+        
+        var participants = party.getParticipants()
+        
+        if let index = participants.index(of: userID) {
+            participants.remove(at: index)
+        }
+        
+        let updates = [PartyJSON.participants.rawValue: participants]
+        
+        let manager = PartyNetworkManager()
+        
+        manager.updateParty(theParty: party, updates: updates) { (error) in
+            if let e = error {
+                switch e {
+                case .badResponse(code: let code):
+                    if code == 405 {
+                        do{
+                            try self.participatingParty?.delete()
+                            completion(nil)
+                        }catch{
+                            completion(NetworkError.realmError(e: error))
+                        }
+                    }
+                default:
+                     completion(e)
+                }
+                completion(e)
+            }else{
+                do{
+                    try self.participatingParty?.delete()
+                    completion(nil)
+                }catch{
+                    completion(NetworkError.realmError(e: error))
+                }
+            }
+        }
     }
     
     

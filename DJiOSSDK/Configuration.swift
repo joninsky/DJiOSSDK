@@ -17,7 +17,7 @@ public class Configuration {
     
     public private(set) var AppID: String?
     
-    let v: UInt64 = 11
+    let v: UInt64 = 13
     
     init?(){
         if let realmFileURL = self.configRealmFile() {

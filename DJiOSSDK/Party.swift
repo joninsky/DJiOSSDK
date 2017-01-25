@@ -15,17 +15,19 @@ public class Party: Object {
     
     dynamic var dj: User?
     
-    let participants = List<User>()
+    public internal(set) var participants = List<User>()
     
     dynamic public internal(set) var name: String?
     
-    public var location: Location?
+    public internal(set) dynamic var location: Location?
     
     public internal(set) dynamic var publicParty = false
     
     dynamic var created_at: Date?
     
     dynamic var updated_at: Date?
+    
+    public internal(set) var votes = List<Vote>()
     
     public convenience init?(withDictionary d: [String: Any]) {
         self.init()
@@ -48,12 +50,18 @@ public class Party: Object {
     
     
     func getJSON() -> [String: Any] {
-        return [PartyJSON.id.rawValue: self.id,
-                PartyJSON.name.rawValue: self.name,
-                PartyJSON.dj.rawValue: self.dj?.id,
-                PartyJSON.participants.rawValue: self.getParticipants(),
-                PartyJSON.location.rawValue: self.location?.getJSON(),
-                PartyJSON.publicParty.rawValue: self.publicParty]
+        print(self.realm)
+        var object: [String: Any] = [PartyJSON.name.rawValue: self.name,
+                      PartyJSON.dj.rawValue: self.dj?.id,
+                      PartyJSON.participants.rawValue: self.getParticipants(),
+                      PartyJSON.location.rawValue: self.location?.getJSON(),
+                      PartyJSON.publicParty.rawValue: self.publicParty]
+        
+        if let id = self.id {
+            object[PartyJSON.id.rawValue] = id
+        }
+        
+        return object
     }
     
     
@@ -73,6 +81,10 @@ public class Party: Object {
         if let realm = self.realm {
             do{
                 try realm.write {
+                    if let loc = self.location {
+                        realm.delete(loc)
+                    }
+                    realm.delete(self.votes)
                     realm.delete(self)
                 }
             }catch{
@@ -82,7 +94,6 @@ public class Party: Object {
     }
     
     internal func crackJSON(theJSON JSON: [String: Any]) throws {
-        
         if let id = JSON[PartyJSON.id.rawValue] as? String {
             if let realm = self.realm {
                 do{
@@ -126,17 +137,26 @@ public class Party: Object {
         }
         
         if let participants = JSON[PartyJSON.participants.rawValue] as? [String] {
-            if let realm = self.realm {
-                do{
-                    try realm.write{
-                        
-                    }
-                }catch{
-                    throw error
+            
+            for u in participants {
+                guard let user = self.realm?.objects(User.self).filter("id = %@", u).first else{
+                    break
                 }
-            }else{
                 
+                if let realm = self.realm {
+                    do{
+                        try realm.write{
+                            self.participants.append(user)
+                        }
+                    }catch{
+                        throw error
+                    }
+                }else{
+                    self.participants.append(user)
+                }
             }
+            
+            
         }
         
         if let locationData = JSON[PartyJSON.location.rawValue] as? [String: Any], let coordinates = locationData["coordinates"] as? [Double], let long = coordinates.first, let lat = coordinates.last {
@@ -209,65 +229,53 @@ public class Party: Object {
 
     
     
-    public func updateLocation(_ loc: Location) {
-        if self.realm == nil {
-            self.location = loc
-        }else if let l = self.location{
-            do{
-                try self.realm?.write {
-                    self.realm?.delete(l)
-                    self.location = loc
-                }
-            }catch{
-                
-            }
-        }else{
-            do{
-                try self.realm?.write {
-                    self.location = loc
-                }
-            }catch{
-                
-            }
-            
+    public func updateLocation(_ loc: Location, completion: @escaping (_ error: NetworkError?) -> Void) {
+        var updates = [PartyJSON.location.rawValue: loc.getJSON()]
+        
+        let manager = PartyNetworkManager()
+        
+        manager.updateParty(theParty: self, updates: updates) { (error) in
+            completion(error)
         }
     }
     
-    public func updateName(_ n: String) throws {
-        guard self.name != n else{
-            return
-        }
+    public func updateName(_ n: String, completion: @escaping ( _ error: NetworkError?) -> Void)  {
+        var updates = [PartyJSON.name.rawValue: n]
         
-        if let r = self.realm {
-            do{
-                try r.write {
-                    self.name = n
-                }
-            }catch{
-                
-            }
-        }else{
-            self.name = n
+        let manager = PartyNetworkManager()
+        
+        manager.updateParty(theParty: self, updates: updates) { (error) in
+            completion(error)
         }
     }
     
     
-    public func setPublic(isPublic p: Bool) throws {
-        guard self.publicParty != p else{
-            return
-        }
+    public func setPublic(isPublic p: Bool, completion: @escaping ( _ error: NetworkError?) -> Void) {
         
+        var updates = [PartyJSON.publicParty.rawValue: p]
+        
+        let manager = PartyNetworkManager()
+        
+        manager.updateParty(theParty: self, updates: updates) { (error) in
+            completion(error)
+        }
+    }
+    
+    
+    public func addVote(theVote V: Vote) throws {
         if let realm = self.realm {
             do{
-                try realm.write{
-                    self.publicParty = p
+                try realm.write {
+                    self.votes.append(V)
                 }
             }catch{
                 throw error
             }
         }else{
-            self.publicParty = p
+            self.votes.append(V)
         }
+        
+        NotificationCenter.default.post(name: VoteNotification, object: V)
     }
     
 }
