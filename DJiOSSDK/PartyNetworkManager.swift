@@ -33,7 +33,6 @@ public class PartyNetworkManager: Networker {
             var JSON = p.getJSON()
             JSON[PartyJSON.dj.rawValue] = u.id
             let data = try JSONSerialization.data(withJSONObject: JSON, options: .prettyPrinted)
-            print(String(data: data, encoding: .utf8))
             request.httpBody = data
         }catch{
             transaction.addErrorDescription(theError: NetworkError.couldNotSetPOSTBody(e: error))
@@ -75,7 +74,7 @@ public class PartyNetworkManager: Networker {
                     }
                     
                     
-                    print(JSON)
+                   // print(JSON)
                     
                     guard let party = JSON["party"] as? [String: Any] else {
                         self.mainQueue.async {
@@ -85,8 +84,6 @@ public class PartyNetworkManager: Networker {
                         }
                         return
                     }
-                    
-                    print(party)
                     
                     self.mainQueue.async {
                         do{
@@ -291,8 +288,6 @@ public class PartyNetworkManager: Networker {
                         return
                     }
                     
-                    print(newData)
-                    
                     self.mainQueue.async {
                         do{
                             try party.crackJSON(theJSON: newData)
@@ -447,7 +442,6 @@ public class PartyNetworkManager: Networker {
         var request = self.getRequest(withURL: finalURL, forMethodType: HTTPMethod.POST)
         
         do{
-            print(party.getJSON())
             request.httpBody = try JSONSerialization.data(withJSONObject: party.getJSON(), options: .prettyPrinted)
         }catch{
             transaction.addErrorDescription(theError: NetworkError.couldNotSetPOSTBody(e: error))
@@ -547,6 +541,103 @@ public class PartyNetworkManager: Networker {
         
         do{
             request.httpBody = try JSONSerialization.data(withJSONObject: ["vote": vote.rawValue, keys.userName: U.name, keys.voterID: U.id], options: .prettyPrinted)
+        }catch{
+            transaction.addErrorDescription(theError: NetworkError.couldNotSetPOSTBody(e: error))
+            TransactionController.shared.addNewTransaction(transaction: transaction)
+            completion(NetworkError.couldNotSetPOSTBody(e: error))
+            return
+        }
+        
+        transaction.addRequest(request: request)
+        
+        let task = self.session.dataTask(with: request) { (data, response, error) in
+            
+            transaction.addSessionResponse(date: data, response: response, error: error)
+            
+            if let e = error{
+                self.mainQueue.async {
+                    transaction.addErrorDescription(theError: NetworkError.requestError(e: e))
+                    TransactionController.shared.addNewTransaction(transaction: transaction)
+                    completion(NetworkError.requestError(e: e))
+                }
+            }else if let httpResponse = response as? HTTPURLResponse, let d = data {
+                switch httpResponse.statusCode {
+                case 200,201:
+                    
+                    var JSON: [String: Any]!
+                    
+                    do{
+                        JSON = try JSONSerialization.jsonObject(with: d, options: JSONSerialization.ReadingOptions.mutableContainers) as? [String: Any]
+                    }catch{
+                        self.mainQueue.async {
+                            transaction.addErrorDescription(theError: NetworkError.failedToParseJSON(error))
+                            TransactionController.shared.addNewTransaction(transaction: transaction)
+                            completion(NetworkError.failedToParseJSON(error))
+                        }
+                    }
+                    
+                    if let message = JSON["message"] as? String {
+                        print(message)
+                    }
+                    
+                    
+                    self.mainQueue.sync {
+                        TransactionController.shared.addNewTransaction(transaction: transaction)
+                        completion(nil)
+                    }
+                    
+                default:
+                    self.mainQueue.async {
+                        transaction.addErrorDescription(theError: NetworkError.badResponse(code: httpResponse.statusCode))
+                        TransactionController.shared.addNewTransaction(transaction: transaction)
+                        completion(NetworkError.badResponse(code: httpResponse.statusCode))
+                    }
+                }
+                
+            }else{
+                self.mainQueue.async {
+                    transaction.addErrorDescription(theError: NetworkError.badResponse(code: nil))
+                    TransactionController.shared.addNewTransaction(transaction: transaction)
+                    completion(NetworkError.badResponse(code: nil))
+                }
+            }
+        }
+        
+        task.resume()
+
+    }
+    
+    
+    public func broadcast(newSong song: String, forParty P: Party, completion: @escaping (_ sender: NetworkError?) -> Void) {
+        let transaction = Transaction(withDate: Date())
+        
+        guard Networker.internetStatus != .notReachable else{
+            transaction.addErrorDescription(theError: NetworkError.noInternet)
+            TransactionController.shared.addNewTransaction(transaction: transaction)
+            completion(NetworkError.noInternet)
+            return
+        }
+        
+        guard let ID = P.id else{
+            transaction.addErrorDescription(theError: NetworkError.badURL)
+            TransactionController.shared.addNewTransaction(transaction: transaction)
+            completion(NetworkError.badURL)
+            return
+        }
+        
+        guard let finalURL = URL(string: self.urlString)?.appendingPathComponent("party").appendingPathComponent("newSong").appendingPathComponent(ID) else{
+            transaction.addErrorDescription(theError: NetworkError.badURL)
+            TransactionController.shared.addNewTransaction(transaction: transaction)
+            completion(NetworkError.badURL)
+            return
+        }
+        
+        var request = self.getRequest(withURL: finalURL, forMethodType: HTTPMethod.POST)
+        
+        let keys = VoteJSON()
+        
+        do{
+            request.httpBody = try JSONSerialization.data(withJSONObject: ["song": song], options: .prettyPrinted)
         }catch{
             transaction.addErrorDescription(theError: NetworkError.couldNotSetPOSTBody(e: error))
             TransactionController.shared.addNewTransaction(transaction: transaction)

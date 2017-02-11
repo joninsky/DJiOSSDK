@@ -14,6 +14,10 @@ public let VoteNotification = NSNotification.Name(rawValue: "VoteNotificaiton")
 
 public let InvitationNotification = NSNotification.Name(rawValue: "InvitationReceived")
 
+public let UpdateNotification = NSNotification.Name(rawValue: "UpdateNotification")
+
+public let RequestNotification = NSNotification.Name(rawValue: "RequestNotification")
+
 public class NotificationHandle: NSObject, UNUserNotificationCenterDelegate {
     
     //MARK: Properties
@@ -81,10 +85,8 @@ public class NotificationHandle: NSObject, UNUserNotificationCenterDelegate {
         let alert = packet["alert"] as? String
         
         if let contentAvailable = packet["content-available"] as? Int {
-            print(contentAvailable)
+           // print(contentAvailable)
         }
-        
-        print(packet)
         
         if let voteType = userInfo["vote"] as? [String: Any] {
             
@@ -112,6 +114,7 @@ public class NotificationHandle: NSObject, UNUserNotificationCenterDelegate {
             
             do{
                 try User.loggedInUser()?.myParty?.addVote(theVote: vote)
+                try User.loggedInUser()?.participatingParty?.addVote(theVote: vote)
             }catch{
                 
             }
@@ -125,10 +128,19 @@ public class NotificationHandle: NSObject, UNUserNotificationCenterDelegate {
             
             do{
                 try User.loggedInUser()?.addInvitation(invitedparty: invitedParty)
-                NotificationCenter.default
+                NotificationCenter.default.post(name: InvitationNotification, object: nil)
             }catch{
                 completion(UIBackgroundFetchResult.failed)
                 return
+            }
+        }
+        
+        if let freshParty = userInfo["party"] as? [String: Any] {
+            do{
+                try User.loggedInUser()?.participatingParty?.crackJSON(theJSON: freshParty)
+                NotificationCenter.default.post(name: UpdateNotification, object: nil)
+            }catch{
+                
             }
         }
         completion(UIBackgroundFetchResult.newData)
@@ -152,5 +164,13 @@ public class NotificationHandle: NSObject, UNUserNotificationCenterDelegate {
         return false
     }
     
+    
+    public func sendQuickNotification(_ body: String) {
+        let content = UNMutableNotificationContent()
+        content.body = body
+        content.categoryIdentifier = "Quick"
+        let request = UNNotificationRequest(identifier: "Quick", content: content, trigger: nil)
+        UNUserNotificationCenter.current().add(request, withCompletionHandler: nil)
+    }
     
 }

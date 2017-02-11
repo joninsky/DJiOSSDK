@@ -49,6 +49,17 @@ public class Vote: Object {
         return self.parties.first
     }
     
+    dynamic public internal(set) var valid = true
+    
+    public var isUsersVote: Bool {
+        guard let userID = User.loggedInUser()?.id else {
+            return false
+        }
+        
+        return (userID == self.voterID)
+        
+    }
+    
     public convenience init?(withDictionary d: [String: Any]) {
         self.init()
         
@@ -64,22 +75,11 @@ public class Vote: Object {
     
     func crackJSON(_ JSON: [String: Any]) throws {
         
-        print(JSON)
-        
         let keys = VoteJSON()
         
         if let type = JSON[keys.voteType] as? Int, let actualType = VoteType(rawValue: type) {
-            if let realm = self.realm {
-                do{
-                    try realm.write {
-                        self.voteType = actualType
-                    }
-                }catch{
-                    
-                }
-            }else{
-                self.voteType = actualType
-            }
+
+            self.voteType = actualType
         }
         
         
@@ -138,8 +138,20 @@ public class Vote: Object {
         
     }
     
-    
-    
+
+    public func invalidte() {
+        if let realm = self.realm {
+            do{
+                try realm.write {
+                    self.valid = false
+                }
+            }catch{
+                
+            }
+        }else{
+            self.valid = false
+        }
+    }
     
     
 }

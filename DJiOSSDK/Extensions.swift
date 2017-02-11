@@ -31,7 +31,7 @@ public extension Configuration {
 
 public extension Networker {
     static public var internetStatus: InternetStatus {
-        
+       
         var zeroAddress = sockaddr_in()
         zeroAddress.sin_len = UInt8(MemoryLayout<sockaddr_in>.size)
         zeroAddress.sin_family = sa_family_t(AF_INET)
@@ -45,6 +45,48 @@ public extension Networker {
         }
         
         var flags: SCNetworkReachabilityFlags = []
+
+        if flags.contains(.connectionOnDemand) {
+            print("Connection On Demand")
+        }
+        
+        if flags.contains(.connectionAutomatic) {
+            print("Connection Automatic")
+        }
+        
+        if flags.contains(.connectionOnTraffic) {
+            print("Connection On Traffic")
+        }
+        
+        if flags.contains(.connectionRequired) {
+            print("Connection Required")
+        }
+        
+        if flags.contains(.interventionRequired) {
+            print("Intervention Required")
+        }
+        
+        if flags.contains(.isDirect) {
+            print("isDirect")
+        }
+        
+        if flags.contains(.isLocalAddress) {
+            print("Local Address")
+        }
+        
+        if flags.contains(.isWWAN) {
+            print("WWAN")
+        }
+        
+        if flags.contains(.reachable) {
+            print("Reachable")
+        }
+        
+        if flags.contains(.transientConnection) {
+            print("Transient Connection")
+        }
+        
+        
         if !SCNetworkReachabilityGetFlags(defaultRouteReachability, &flags) {
             return .notReachable
         }
@@ -60,8 +102,10 @@ public extension Networker {
         else if flags.contains(.connectionRequired) == false {
             // If the target host is reachable and no connection is required then we'll assume that you're on Wi-Fi...
             return .reachableViaWiFi
-        }
-        else if (flags.contains(.connectionOnDemand) == true || flags.contains(.connectionOnTraffic) == true) && flags.contains(.interventionRequired) == false {
+        }else if flags.contains(.connectionRequired) && flags.contains(.isWWAN) {
+            // Not sure here, maybe Wi-Fi assist is currently being utilized? Will need to test.
+            return .wifiAssist
+        }else if (flags.contains(.connectionOnDemand) == true || flags.contains(.connectionOnTraffic) == true) && flags.contains(.interventionRequired) == false {
             // The connection is on-demand (or on-traffic) if the calling application is using the CFSocketStream or higher APIs and no [user] intervention is needed
             return .reachableViaWiFi
         }

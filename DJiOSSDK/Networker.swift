@@ -16,11 +16,11 @@ public class Networker {
     let mainQueue = DispatchQueue.main
     
     //Home Network
-   // let urlString = "http://192.168.0.2:8080/api"
+    let urlString = "http://192.168.0.2:8080/api"
     //Local Host
     //let urlString = "http://localhost:8080/api"
     //Live AWS
-    let urlString = "http://ec2-35-165-240-107.us-west-2.compute.amazonaws.com:8080/api"
+    //let urlString = "http://ec2-35-165-240-107.us-west-2.compute.amazonaws.com:8080/api"
     
     //MARK: Header Stuff
     let contentTypeValue = "application/json"

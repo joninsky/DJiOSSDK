@@ -11,6 +11,7 @@
 		C33208DA1E1488FD00CBCEC5 /* DJiOSSDK.h in Headers */ = {isa = PBXBuildFile; fileRef = C33208D81E1488FD00CBCEC5 /* DJiOSSDK.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		C37CC8A61E2DFC8400C6EC30 /* NotificationHandle.swift in Sources */ = {isa = PBXBuildFile; fileRef = C37CC8A51E2DFC8400C6EC30 /* NotificationHandle.swift */; };
 		C3A915E91E3735F0005251B8 /* Vote.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3A915E81E3735F0005251B8 /* Vote.swift */; };
+		C3A915ED1E39CAF1005251B8 /* Request.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3A915EC1E39CAF1005251B8 /* Request.swift */; };
 		C3B7170E1E148DED00318A0E /* Configuration.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3B7170D1E148DED00318A0E /* Configuration.swift */; };
 		C3B717131E148E1500318A0E /* Enumerations.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3B717121E148E1500318A0E /* Enumerations.swift */; };
 		C3B717151E148E2400318A0E /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3B717141E148E2400318A0E /* Extensions.swift */; };
@@ -31,6 +32,7 @@
 		C33208D91E1488FD00CBCEC5 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		C37CC8A51E2DFC8400C6EC30 /* NotificationHandle.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NotificationHandle.swift; sourceTree = "<group>"; };
 		C3A915E81E3735F0005251B8 /* Vote.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Vote.swift; sourceTree = "<group>"; };
+		C3A915EC1E39CAF1005251B8 /* Request.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Request.swift; sourceTree = "<group>"; };
 		C3B7170D1E148DED00318A0E /* Configuration.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Configuration.swift; sourceTree = "<group>"; };
 		C3B717121E148E1500318A0E /* Enumerations.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Enumerations.swift; sourceTree = "<group>"; };
 		C3B717141E148E2400318A0E /* Extensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
@@ -90,6 +92,7 @@
 				C3B717201E148F3A00318A0E /* Location.swift */,
 				C3B717221E1492BC00318A0E /* Transaction.swift */,
 				C3A915E81E3735F0005251B8 /* Vote.swift */,
+				C3A915EC1E39CAF1005251B8 /* Request.swift */,
 			);
 			name = Models;
 			sourceTree = "<group>";
@@ -206,6 +209,7 @@
 				C3B717151E148E2400318A0E /* Extensions.swift in Sources */,
 				C3B717171E148E7800318A0E /* LoginNetworkManager.swift in Sources */,
 				C3B717231E1492BC00318A0E /* Transaction.swift in Sources */,
+				C3A915ED1E39CAF1005251B8 /* Request.swift in Sources */,
 				C3B717211E148F3A00318A0E /* Location.swift in Sources */,
 				C32CB2001E172B220060B657 /* SocketController.swift in Sources */,
 				C3B717131E148E1500318A0E /* Enumerations.swift in Sources */,

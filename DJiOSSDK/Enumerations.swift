@@ -24,6 +24,7 @@ public enum InternetStatus {
     case notReachable
     case reachableViaWWAN
     case reachableViaWiFi
+    case wifiAssist
 }
 
 enum HTTPMethod: String {
@@ -41,6 +42,9 @@ public enum UserJSON: String {
     case facebook_login = "facebook_login"
     case facebook_id = "facebook_id"
     case facebookToken = "facebookToken"
+    case spotifyRefreshToken = "spotifyRefreshToken"
+    case spotifyToken = "spotifyToken"
+    case spotifyTokenExpiration = "spotifyTokenExpiration"
     case spotify_login = "spotify_login"
     case djscore = "djscore"
     case pushToken = "pushToken"

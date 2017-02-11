@@ -31,7 +31,6 @@ public class Party: Object {
     
     public convenience init?(withDictionary d: [String: Any]) {
         self.init()
-        print(d)
         
         guard let _ = d[PartyJSON.name.rawValue] as? String else {
             return nil
@@ -50,7 +49,6 @@ public class Party: Object {
     
     
     func getJSON() -> [String: Any] {
-        print(self.realm)
         var object: [String: Any] = [PartyJSON.name.rawValue: self.name,
                       PartyJSON.dj.rawValue: self.dj?.id,
                       PartyJSON.participants.rawValue: self.getParticipants(),
@@ -74,6 +72,26 @@ public class Party: Object {
             array.append(id)
         }
         return array
+    }
+    
+    public func countVoteType(_ type: VoteType) -> Int {
+        let validVotes =  self.votes.filter("rawVoteType = %@", type.rawValue)
+        
+        var uniqueVotes = Set<String>()
+        
+        
+        for vote in validVotes {
+            guard let ID = vote.voterID else{
+                break
+            }
+            
+            if !uniqueVotes.contains(ID) {
+                uniqueVotes.insert(ID)
+            }
+        }
+        
+        return uniqueVotes.count
+        
     }
     
     
@@ -263,6 +281,7 @@ public class Party: Object {
     
     
     public func addVote(theVote V: Vote) throws {
+        
         if let realm = self.realm {
             do{
                 try realm.write {
@@ -276,6 +295,13 @@ public class Party: Object {
         }
         
         NotificationCenter.default.post(name: VoteNotification, object: V)
+    }
+    
+    
+    public func invalidateCurrentVotes() {
+        for v in self.votes {
+            v.invalidte()
+        }
     }
     
 }

@@ -20,6 +20,9 @@ public class User: Object {
     dynamic public internal(set) var facebook_login = false
     dynamic public internal(set) var facebookID: String?
     dynamic internal var facebookToken: String?
+    dynamic internal var spotifyRefreshToken: String?
+    dynamic internal var spotifyToken: String?
+    dynamic internal var spotifyTokenExpiration: Date?
     dynamic public internal(set) var spotify_login = false
     dynamic public internal(set) var djScore: Double = 0.9
     dynamic internal var pushToken: String?
@@ -42,24 +45,11 @@ public class User: Object {
     
     public convenience init?(withDictionary d: [String: Any]) {
         self.init()
-        guard let _ = d[UserJSON.name.rawValue] as? String else {
-            return nil
-        }
-        
-        
-        guard let _ = d[UserJSON.facebook_id.rawValue] as? String else {
-            return nil
-        }
-        
-        
-        guard let _ = d[UserJSON.facebookToken.rawValue] as? String else{
-            return nil
-        }
         
         do{
             try self.crackJSON(theJSON: d)
         }catch{
-            
+            return nil
         }
     }
     
@@ -70,6 +60,9 @@ public class User: Object {
                       UserJSON.facebook_id.rawValue: self.facebookID,
                       UserJSON.facebook_login.rawValue: self.facebook_login,
                       UserJSON.facebookToken.rawValue: self.facebookToken,
+                      UserJSON.spotifyRefreshToken.rawValue: self.spotifyRefreshToken,
+                      UserJSON.spotifyToken.rawValue: self.spotifyToken,
+                      UserJSON.spotifyTokenExpiration.rawValue: self.spotifyTokenExpiration,
                       UserJSON.spotify_login.rawValue: self.spotify_login,
                       UserJSON.djscore.rawValue: self.djScore,
                       UserJSON.pushToken.rawValue: self.pushToken,
@@ -177,6 +170,20 @@ public class User: Object {
                 }
             }else{
                 self.facebookToken = faceBookToken
+            }
+        }
+        
+        if let theSpotifyToken = JSON[UserJSON.spotifyToken.rawValue] as? String {
+            if let realm = self.realm {
+                do{
+                    try realm.write {
+                        self.spotifyToken = theSpotifyToken
+                    }
+                }catch{
+                    throw error
+                }
+            }else{
+                self.spotifyToken = theSpotifyToken
             }
         }
         

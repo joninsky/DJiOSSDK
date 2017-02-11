@@ -69,7 +69,7 @@ public class LoginNetworkManager: Networker {
                         }
                     }
                     
-                    print(JSON)
+                    //print(JSON)
                     
                     if let message = JSON["message"] as? String {
                         print(message)
@@ -182,7 +182,7 @@ public class LoginNetworkManager: Networker {
                         }
                     }
                     
-                    print(JSON)
+                    //print(JSON)
                     
                     if let message = JSON["message"] as? String {
                         print(message)
